@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AzCEP Resident Research Evaluation Portal, Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <style>
+    :root { --ink: #1f2937; --stone-100: #f5f5f4; --stone-200: #e7e5e4; --stone-300: #d6d3d1; --stone-500: #78716c; --stone-700: #44403c; --acep: #003e8a; --acep-deep: #002b63; --acep-light: #e6edf6; --amber: #e8a04b; --emerald-700: #047857; --red-50: #fef2f2; --red-200: #fecaca; --red-700: #b91c1c; --yellow-100: #fef9c3; --yellow-300: #fde047; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--stone-100); color: var(--ink); font-family: 'Inter', -apple-system, system-ui, sans-serif; font-size: 14px; line-height: 1.55; }
+    h1, h2, h3, h4 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; color: var(--acep-deep); margin: 0; }
+    h1 { font-size: 28px; line-height: 1.15; } h2 { font-size: 20px; line-height: 1.25; } h3 { font-size: 16px; line-height: 1.3; }
+    a { color: var(--acep); text-decoration: none; } a:hover { text-decoration: underline; }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+    .app-header { background: #fff; border-bottom: 1px solid var(--stone-200); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; position: sticky; top: 0; z-index: 10; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, var(--acep) 0%, var(--acep-deep) 100%); color: #fff; display: grid; place-items: center; font-family: 'Fraunces', serif; font-weight: 600; font-size: 13px; }
+    .brand-title { font-family: 'Fraunces', serif; font-weight: 500; font-size: 15px; color: var(--acep-deep); line-height: 1.1; }
+    .brand-sub { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .25em; text-transform: uppercase; color: var(--stone-500); margin-top: 2px; }
+    .role-switch { display: flex; align-items: center; gap: 12px; }
+    .role-switch label { font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--stone-500); font-weight: 600; }
+    .role-switch select { padding: 6px 10px; border: 1px solid var(--stone-300); border-radius: 6px; font-size: 13px; background: #fff; }
+    .role-switch .reset-btn { padding: 6px 12px; background: var(--red-50); color: var(--red-700); border: 1px solid var(--red-200); border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 68px); }
+    .sidebar { background: #fff; border-right: 1px solid var(--stone-200); padding: 24px 12px; }
+    .sidebar h4 { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .25em; text-transform: uppercase; color: var(--stone-500); font-weight: 600; padding: 0 12px; margin-bottom: 8px; }
+    .sidebar nav { display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; }
+    .sidebar nav a { padding: 8px 12px; border-radius: 6px; font-size: 13px; color: var(--stone-700); text-decoration: none; }
+    .sidebar nav a:hover { background: var(--stone-100); color: var(--acep-deep); }
+    .sidebar nav a.active { background: var(--acep-light); color: var(--acep-deep); font-weight: 600; }
+    .main { padding: 32px 36px; max-width: 1200px; }
+    .card { background: #fff; border: 1px solid var(--stone-200); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+    .card h2 { margin-bottom: 4px; }
+    .card .card-sub { font-size: 12px; color: var(--stone-500); margin-bottom: 16px; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+    .pill-setup { background: #fef3c7; color: #92400e; }
+    .pill-open { background: #d1fae5; color: #065f46; }
+    .pill-closed { background: #e5e7eb; color: #374151; }
+    .pill-status-not { background: var(--stone-200); color: var(--stone-700); }
+    .pill-status-progress { background: #fef3c7; color: #92400e; }
+    .pill-status-complete { background: #d1fae5; color: #065f46; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { background: var(--stone-100); color: var(--stone-500); text-transform: uppercase; font-size: 10px; letter-spacing: .1em; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--stone-100); }
+    th { font-weight: 600; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr.row-hover:hover { background: var(--stone-100); }
+    form .field { margin-bottom: 14px; }
+    label.field-label { display: block; font-size: 11px; font-weight: 600; color: var(--stone-500); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 4px; }
+    .field-help { font-size: 11px; color: var(--stone-500); margin-top: 2px; }
+    input[type=text], input[type=email], input[type=url], textarea, select { width: 100%; padding: 8px 10px; border: 1px solid var(--stone-300); border-radius: 6px; font-size: 13px; font-family: 'Inter', sans-serif; background: #fff; }
+    textarea { resize: vertical; min-height: 60px; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--acep); box-shadow: 0 0 0 2px rgba(0,62,138,.15); }
+    .btn { display: inline-block; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid transparent; font-family: inherit; }
+    .btn-primary { background: var(--acep); color: #fff; } .btn-primary:hover { background: var(--acep-deep); }
+    .btn-ghost { background: #fff; color: var(--stone-700); border-color: var(--stone-300); } .btn-ghost:hover { background: var(--stone-100); }
+    .btn-danger { background: var(--red-50); color: var(--red-700); border-color: var(--red-200); } .btn-danger:hover { background: var(--red-200); }
+    .btn-sm { padding: 4px 10px; font-size: 11px; }
+    .btn-link { background: none; border: none; color: var(--acep); cursor: pointer; font-size: 12px; padding: 0; } .btn-link:hover { text-decoration: underline; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .score-grid { display: grid; gap: 4px; }
+    .score-tile { border: 1px solid var(--stone-200); border-radius: 8px; padding: 12px; text-align: center; background: #fff; }
+    .score-tile .label { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: var(--stone-500); font-weight: 600; }
+    .score-tile .value { font-family: 'Fraunces', serif; font-size: 24px; color: var(--acep-deep); margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .rubric-block { border: 1px solid var(--stone-200); border-radius: 8px; padding: 16px; margin-bottom: 14px; background: #fff; }
+    .rubric-title { font-weight: 600; color: var(--acep-deep); margin-bottom: 4px; }
+    .rubric-prompt { font-size: 12px; color: var(--stone-700); margin-bottom: 10px; line-height: 1.5; }
+    .score-buttons { display: flex; gap: 4px; margin-bottom: 8px; }
+    .score-btn { width: 36px; height: 36px; border-radius: 6px; border: 1px solid var(--stone-300); background: #fff; font-family: 'JetBrains Mono', monospace; font-size: 13px; cursor: pointer; font-weight: 500; }
+    .score-btn:hover { border-color: var(--stone-500); }
+    .score-btn.selected { background: var(--acep); color: #fff; border-color: var(--acep); }
+    #toast-stack { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
+    .toast { background: var(--acep-deep); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+    .toast.success { background: var(--emerald-700); } .toast.warn { background: #b45309; } .toast.error { background: var(--red-700); }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: grid; place-items: center; z-index: 50; }
+    .modal { background: #fff; border-radius: 10px; padding: 24px; max-width: 520px; width: 90%; }
+    .modal h3 { margin-bottom: 8px; }
+    .modal p { font-size: 13px; margin-bottom: 14px; color: var(--stone-700); }
+    .modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .flex { display: flex; } .items-center { align-items: center; } .justify-between { justify-content: space-between; }
+    .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; }
+    .text-mut { color: var(--stone-500); } .text-sm { font-size: 12px; } .text-xs { font-size: 11px; } .text-right { text-align: right; }
+    .alert { padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 14px; }
+    .alert-info { background: var(--acep-light); color: var(--acep-deep); border: 1px solid #c5d4eb; }
+    .alert-warn { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-prototype { background: var(--amber); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: .05em; }
+    .yellow-cell { background: var(--yellow-100); }
+    .scoring-table td.excluded { background: var(--yellow-100); }
+    /* Help tooltip */
+    .help { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: var(--stone-500); color: #fff; font-size: 9px; font-weight: 700; font-family: 'Inter', sans-serif; margin-left: 5px; cursor: help; position: relative; text-transform: none; letter-spacing: 0; }
+    .help:hover { background: var(--acep); }
+    .help:hover .help-body, .help:focus .help-body { visibility: visible; opacity: 1; }
+    .help-body { visibility: hidden; opacity: 0; transition: opacity .1s ease-in; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; line-height: 1.5; width: 240px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,.25); text-align: left; }
+    .help-body::before { content: ""; position: absolute; top: -5px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 5px solid #0f172a; }
+    .help-body strong { color: var(--amber); }
+    @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } .sidebar { border-right: none; border-bottom: 1px solid var(--stone-200); } .main { padding: 20px; } .help-body { left: auto; right: 0; transform: none; } .help-body::before { left: auto; right: 2px; transform: none; } }
+  </style>
+</head>
+<body>
+<header class="app-header">
+  <div class="brand">
+    <div class="brand-badge">AZ</div>
+    <div>
+      <div class="brand-title">AzCEP Resident Research Evaluation Portal <span class="badge-prototype">PROTOTYPE</span></div>
+      <div class="brand-sub">Interactive demo &middot; No production connection</div>
+    </div>
+  </div>
+  <div class="role-switch">
+    <label for="roleSel">Viewing as</label>
+    <select id="roleSel"></select>
+    <button class="reset-btn" id="resetBtn">Reset demo</button>
+  </div>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main" id="main"></main>
+</div>
+<div id="toast-stack"></div>
+<div id="modal-mount"></div>
+<script>
+const STORAGE_KEY = "azcep-resident-eval-prototype-v1";
+const CURRENT_YEAR = 2027;
+const RUBRIC = [
+  { key: "cat1", title: "Strength of the methods", prompt: "Strength of the methods; rating of validity, appropriateness of methods for testing study hypotheses/objectives" },
+  { key: "cat2", title: "Study completion", prompt: "Study completion: How likely is the study to be completed as outlined in the proposal?" },
+  { key: "cat3", title: "Novelty", prompt: "How novel, or interesting the research idea is?" },
+  { key: "cat4", title: "Impact", prompt: "Impact: How likely will the study results result in valuable contribution to the EM literature?" },
+  { key: "cat5", title: "AzCEP mission", prompt: "AzCEP mission: How well does the study correlate with the overall interests of the AzCEP physician members?" },
+  { key: "cat6", title: "AzCEP outreach", prompt: "AzCEP outreach: How well does the study promote the profile and outreach of AzCEP to the state of Arizona and nationally?" },
+];
+function seedData() {
+  const submissions = [
+    { id: "s1", number: 1, title: "Point-of-care echocardiography for undifferentiated shock in a rural Arizona ED", driveUrl: "https://drive.google.com/file/d/FICTIONAL_FILE_ID_001/view", approved: true, residentName: "Dr. Rowan Westbrook (fictional)", residentInstitution: "Mayo Clinic Arizona EM (fictional)", version: 1 },
+    { id: "s2", number: 2, title: "Implementation of a nurse-initiated sepsis bundle in a critical-access ED", driveUrl: "https://drive.google.com/file/d/FICTIONAL_FILE_ID_002/view", approved: true, residentName: "Dr. Priya Castellano (fictional)", residentInstitution: "Banner-UMC Tucson EM (fictional)", version: 1 },
+    { id: "s3", number: 3, title: "Low-dose ketamine vs intranasal fentanyl for pediatric long-bone fracture pain", driveUrl: "https://drive.google.com/file/d/FICTIONAL_FILE_ID_003/view", approved: true, residentName: "Dr. Ellis Ngozi (fictional)", residentInstitution: "Creighton Phoenix EM (fictional)", version: 1 },
+    { id: "s4", number: 4, title: "Smartphone-triggered naloxone kits in a Phoenix opioid-response pilot", driveUrl: "https://drive.google.com/file/d/FICTIONAL_FILE_ID_004/view", approved: false, residentName: "Dr. Mariana Choudhury (fictional)", residentInstitution: "Valleywise EM (fictional)", version: 1 },
+  ];
+  const judges = [
+    { id: "j1", code: "J01", name: "Dr. Alison Barkley", email: "a.barkley.fictional@example.com", invitedAt: "2027-01-10", removedAt: null, includeScoresAfterRemoval: null },
+    { id: "j2", code: "J02", name: "Dr. Marcus Thornton", email: "m.thornton.fictional@example.com", invitedAt: "2027-01-10", removedAt: null, includeScoresAfterRemoval: null },
+    { id: "j3", code: "J03", name: "Dr. Yuki Nakamura", email: "y.nakamura.fictional@example.com", invitedAt: "2027-01-12", removedAt: null, includeScoresAfterRemoval: null },
+    { id: "j4", code: "J04", name: "Dr. Sofia Delgado", email: "s.delgado.fictional@example.com", invitedAt: "2027-01-15", removedAt: null, includeScoresAfterRemoval: null },
+    { id: "j5", code: "J05", name: "Dr. Benjamin Ouellet", email: "b.ouellet.fictional@example.com", invitedAt: "2027-01-10", removedAt: "2027-02-01", includeScoresAfterRemoval: true },
+  ];
+  function r(jid, sid, scores, status, comments) {
+    return { id: jid + "_" + sid, judgeId: jid, submissionId: sid, ...scores, commentCat1: scores.cat1 ? comments : "", commentCat2: "", commentCat3: "", commentCat4: "", commentCat5: "", commentCat6: "", status, finalizedAt: status === "final" ? "2027-02-10T18:00:00Z" : null, editVersion: 1 };
+  }
+  const reviews = [
+    r("j1","s1",{cat1:4,cat2:5,cat3:4,cat4:4,cat5:5,cat6:4}, "final", "Methods sound. Rural AZ fit is excellent."),
+    r("j1","s2",{cat1:3,cat2:4,cat3:3,cat4:4,cat5:4,cat6:3}, "final", "Solid QI design."),
+    r("j1","s3",{cat1:5,cat2:4,cat3:5,cat4:5,cat5:4,cat6:4}, "final", "Pediatric analgesia work is high impact."),
+    r("j2","s1",{cat1:5,cat2:5,cat3:4,cat4:5,cat5:5,cat6:4}, "final", "Outstanding. Needs a plan for POCUS credentialing."),
+    r("j2","s2",{cat1:3,cat2:4,cat3:2,cat4:3,cat5:4,cat6:3}, "final", "Methods OK, limited novelty."),
+    r("j2","s3",{cat1:4,cat2:4,cat3:5,cat4:5,cat5:4,cat6:5}, "final", "Love the comparator choice."),
+    r("j3","s1",{cat1:4,cat2:4,cat3:3,cat4:4,cat5:5,cat6:4}, "final", "Strong rural-ED relevance."),
+    r("j3","s2",{cat1:3,cat2:0,cat3:0,cat4:0,cat5:0,cat6:0}, "draft", "Interested, need more on the staffing model."),
+    r("j5","s1",{cat1:2,cat2:3,cat3:3,cat4:3,cat5:3,cat6:2}, "final", "Scope concerns."),
+    r("j5","s2",{cat1:5,cat2:4,cat3:4,cat4:4,cat5:4,cat6:4}, "final", "Strong work."),
+    r("j5","s3",{cat1:4,cat2:4,cat3:4,cat4:4,cat5:3,cat6:4}, "final", "Good. Minor stats concerns."),
+  ];
+  return { competition: { id: "c1", name: CURRENT_YEAR + " Resident Research Competition", year: CURRENT_YEAR, status: "open", deadline: "2027-03-01", createdAt: "2027-01-08", rubric: RUBRIC }, submissions, judges, reviews, ui: { role: "admin", currentJudgeId: "j1", currentView: "dashboard" } };
+}
+function loadState() { try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) return JSON.parse(raw); } catch (e) {} const f = seedData(); saveState(f); return f; }
+function saveState(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+function resetDemo() { localStorage.removeItem(STORAGE_KEY); state = loadState(); render(); toast("Demo reset. All seeded data restored.", "success"); }
+let state = loadState();
+function toast(msg, kind) { const el = document.createElement("div"); el.className = "toast" + (kind ? " " + kind : ""); el.textContent = msg; document.getElementById("toast-stack").appendChild(el); setTimeout(() => el.remove(), 3200); }
+function pad3(n) { return String(n).padStart(3, "0"); }
+function totalFromScores(r) { return [r.cat1, r.cat2, r.cat3, r.cat4, r.cat5, r.cat6].reduce((a,b) => a + (b || 0), 0); }
+function activeJudges() { return state.judges.filter(j => !j.removedAt); }
+function includedReviews(subId) { return state.reviews.filter(r => { if (r.submissionId !== subId) return false; if (r.status !== "final") return false; const j = state.judges.find(j => j.id === r.judgeId); if (!j) return false; return !j.removedAt || j.includeScoresAfterRemoval === true; }); }
+function computeAverages(subId) {
+  const incl = includedReviews(subId);
+  if (incl.length === 0) return { avg: null, trimmed: null, count: 0, excluded: [] };
+  const totals = incl.map(r => ({ id: r.id, total: totalFromScores(r), finalizedAt: r.finalizedAt }));
+  const avg = totals.reduce((a, t) => a + t.total, 0) / totals.length;
+  if (totals.length < 3) return { avg, trimmed: null, count: totals.length, excluded: [] };
+  const sl = [...totals].sort((a, b) => a.total - b.total || a.finalizedAt.localeCompare(b.finalizedAt) || a.id.localeCompare(b.id));
+  const sh = [...totals].sort((a, b) => b.total - a.total || a.finalizedAt.localeCompare(b.finalizedAt) || a.id.localeCompare(b.id));
+  const lowId = sl[0].id, highId = sh[0].id;
+  const kept = totals.filter(t => t.id !== lowId && t.id !== highId);
+  const trimmed = kept.reduce((a, t) => a + t.total, 0) / kept.length;
+  return { avg, trimmed, count: totals.length, excluded: [lowId, highId] };
+}
+function provisionalFlag(subId) { const act = activeJudges(); const fc = state.reviews.filter(r => r.submissionId === subId && r.status === "final" && act.find(j => j.id === r.judgeId)).length; return fc < act.length; }
+function rankingRows() { return state.submissions.filter(s => s.approved).map(s => { const a = computeAverages(s.id); return { s, avg: a.avg, trimmed: a.trimmed, count: a.count, provisional: provisionalFlag(s.id) }; }).sort((x, y) => (y.trimmed ?? y.avg ?? -1) - (x.trimmed ?? x.avg ?? -1)); }
+function go(view, params) { state.ui.currentView = view; if (params) Object.assign(state.ui, params); saveState(state); render(); window.scrollTo(0, 0); }
+function render() { renderHeader(); renderSidebar(); renderMain(); }
+function renderHeader() {
+  const sel = document.getElementById("roleSel");
+  const opts = [{ v: "admin", label: "Administrator" }, ...activeJudges().map(j => ({ v: "judge:" + j.id, label: j.name }))];
+  sel.innerHTML = opts.map(o => { const s = (state.ui.role === "admin" && o.v === "admin") || (state.ui.role === "judge" && o.v === "judge:" + state.ui.currentJudgeId); return `<option value="${o.v}" ${s ? "selected" : ""}>${o.label}</option>`; }).join("");
+  sel.onchange = (e) => { const v = e.target.value; if (v === "admin") { state.ui.role = "admin"; state.ui.currentView = "dashboard"; } else { state.ui.role = "judge"; state.ui.currentJudgeId = v.replace("judge:", ""); state.ui.currentView = "judge-dashboard"; } saveState(state); render(); };
+  document.getElementById("resetBtn").onclick = () => openModal({ title: "Reset the demo?", body: "This clears all scored evaluations, judge assignments, and submissions in this browser and reloads the original fictional data.", actions: [{ label: "Cancel", kind: "ghost", onClick: closeModal }, { label: "Reset", kind: "danger", onClick: () => { closeModal(); resetDemo(); } }] });
+}
+function renderSidebar() {
+  const sb = document.getElementById("sidebar");
+  if (state.ui.role === "admin") {
+    const tabs = [["dashboard","Overview"],["submissions","Submissions"],["judges","Judges"],["scoring","Scoring dashboard"],["exports","Exports"],["audit","Audit (sample)"]];
+    sb.innerHTML = `<h4>Admin</h4><nav>${tabs.map(([v,l]) => `<a href="#" data-view="${v}" class="${state.ui.currentView===v?"active":""}">${l}</a>`).join("")}</nav><h4>Competition</h4><div style="padding:0 12px; font-size:12px; color:var(--stone-700);"><div style="font-weight:600; color:var(--acep-deep);">${state.competition.name}</div><div class="text-mut text-xs mt-3">Status <span class="pill pill-${state.competition.status}">${state.competition.status}</span></div><div class="text-mut text-xs mt-3">Deadline ${state.competition.deadline}</div></div>`;
+  } else {
+    const j = state.judges.find(x => x.id === state.ui.currentJudgeId);
+    sb.innerHTML = `<h4>Judge</h4><nav><a href="#" data-view="judge-dashboard" class="${state.ui.currentView==='judge-dashboard'?"active":""}">My dashboard</a></nav><h4>Your profile</h4><div style="padding:0 12px; font-size:12px; color:var(--stone-700);"><div style="font-weight:600; color:var(--acep-deep);">${j.name}</div><div class="text-mut text-xs">${j.code} &middot; ${j.email}</div><div class="text-mut text-xs mt-3">${state.competition.name}</div></div>`;
+  }
+  sb.querySelectorAll("a[data-view]").forEach(a => { a.onclick = (e) => { e.preventDefault(); go(a.dataset.view); }; });
+}
+function renderMain() {
+  const m = document.getElementById("main");
+  if (state.ui.role === "admin") {
+    switch (state.ui.currentView) {
+      case "dashboard": return m.innerHTML = adminOverview(), bindAdminOverview();
+      case "submissions": return m.innerHTML = adminSubmissions(), bindAdminSubmissions();
+      case "judges": return m.innerHTML = adminJudges(), bindAdminJudges();
+      case "scoring": return m.innerHTML = adminScoring(), bindAdminScoring();
+      case "exports": return m.innerHTML = adminExports(), bindAdminExports();
+      case "audit": return m.innerHTML = adminAudit();
+      case "submission-detail": return m.innerHTML = adminSubmissionDetail(), bindAdminSubmissionDetail();
+      default: state.ui.currentView = "dashboard"; return renderMain();
+    }
+  } else {
+    switch (state.ui.currentView) {
+      case "judge-dashboard": return m.innerHTML = judgeDashboard(), bindJudgeDashboard();
+      case "judge-evaluate": return m.innerHTML = judgeEvaluate(), bindJudgeEvaluate();
+      default: state.ui.currentView = "judge-dashboard"; return renderMain();
+    }
+  }
+}
+function adminOverview() {
+  const total=state.submissions.length, appr=state.submissions.filter(s=>s.approved).length, aj=activeJudges().length;
+  const tr=aj*appr, fr=state.reviews.filter(r=>r.status==="final"&&activeJudges().some(j=>j.id===r.judgeId)).length;
+  const dr=state.reviews.filter(r=>r.status==="draft"&&activeJudges().some(j=>j.id===r.judgeId)).length;
+  const pct = tr ? Math.round((fr/tr)*100) : 0;
+  const st = state.competition.status;
+  const statusPillClass = `pill-${st}`;
+  const judgingComplete = state.submissions.filter(s => s.approved).every(s => !provisionalFlag(s.id));
+  const judgingLabel = st === "archived" ? "Archived (read-only)" : (judgingComplete ? "All active judges have finalized" : "Preliminary — judging in progress");
+  const judgingPillClass = st === "archived" ? "pill-archived" : (judgingComplete ? "pill-open" : "pill-setup");
+
+  // Competition Management actions depend on current status
+  let cmActions = "";
+  if (st === "setup") {
+    cmActions = `<button class="btn btn-primary" id="cmOpen">Open competition</button><span class="text-xs text-mut">Activates the competition so judges can begin evaluating approved submissions.</span>`;
+  } else if (st === "open") {
+    cmActions = `<button class="btn btn-danger" id="cmClose">Close competition</button><span class="text-xs text-mut">Locks judging. Preserves all scores, rankings, and exports. You can reopen later.</span>`;
+  } else if (st === "closed") {
+    cmActions = `<button class="btn btn-ghost" id="cmReopen">Reopen competition</button> <button class="btn btn-danger" id="cmArchive">Archive competition</button><span class="text-xs text-mut">Reopen restores judging. Archive makes everything read-only permanently and revokes judges' portal access.</span>`;
+  } else if (st === "archived") {
+    cmActions = `<div class="alert alert-info" style="margin:0;">Archived competitions are read-only. Judges no longer have portal access. Archived competitions cannot be reopened.</div>`;
+  }
+
+  return `<h1 style="margin-bottom:8px;">${state.competition.name}</h1><p class="text-mut text-sm" style="margin-bottom:24px;">Administrator overview &middot; Prototype demo environment.</p><div class="score-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom:24px;"><div class="score-tile"><div class="label">Submissions</div><div class="value">${appr} / ${total}</div><div class="text-xs text-mut">approved / registered</div></div><div class="score-tile"><div class="label">Active judges</div><div class="value">${aj}</div></div><div class="score-tile"><div class="label">Finalized reviews</div><div class="value">${fr} / ${tr}</div><div class="text-xs text-mut">${pct}% complete</div></div><div class="score-tile"><div class="label">Drafts in progress</div><div class="value">${dr}</div></div></div><div class="card"><h2>Quick actions</h2><div class="card-sub">The most common moves while a competition is open.</div><div class="flex gap-2" style="flex-wrap:wrap;"><button class="btn btn-primary" data-go="submissions">Register a new submission</button><button class="btn btn-ghost" data-go="judges">Assign a judge</button><button class="btn btn-ghost" data-go="scoring">View scoring dashboard</button><button class="btn btn-ghost" data-go="exports">Export results</button></div></div><div class="card"><h2>Competition management</h2><div class="card-sub">Lifecycle controls for the annual competition. Judging completion (Preliminary / Final) is tracked separately and never auto-changes competition status.</div><div class="flex gap-4" style="flex-wrap:wrap; margin-bottom:14px;"><div><div class="text-xs text-mut" style="text-transform:uppercase; letter-spacing:.1em; font-weight:600; margin-bottom:4px;">Competition status</div><span class="pill ${statusPillClass}" style="font-size:12px; padding:4px 12px;">${st}</span></div><div><div class="text-xs text-mut" style="text-transform:uppercase; letter-spacing:.1em; font-weight:600; margin-bottom:4px;">Judging status</div><span class="pill ${judgingPillClass}" style="font-size:12px; padding:4px 12px;">${judgingLabel}</span></div></div><div class="flex gap-2 items-center" style="flex-wrap:wrap;">${cmActions}</div></div><div class="card"><h2>How the Google Drive workflow works</h2><div class="card-sub">Reminder of the annual admin procedure.</div><ol style="padding-left:20px; font-size:13px; color:var(--stone-700); line-height:1.8;"><li>Create a Drive folder for the year, e.g. <code>Resident Research Eval ${CURRENT_YEAR}</code>.</li><li>Upload de-identified PDFs. Share the folder with each judge's Google account as <strong>Restricted Viewer</strong>, not "Anyone with link".</li><li>Register each PDF here, pasting its Drive share link.</li><li>Preview, then click <strong>Approve for Judging</strong>. It appears on every active judge's dashboard.</li><li>When the competition ends or a judge is removed, revoke their Drive access manually.</li></ol><div class="alert alert-warn mt-3">Portal access and Drive access are managed separately. Removing a judge in the portal does not revoke Drive sharing automatically.</div></div>`;
+}
+function bindAdminOverview() {
+  document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+  const o = document.getElementById("cmOpen"); if (o) o.onclick = () => openCompetition();
+  const c = document.getElementById("cmClose"); if (c) c.onclick = () => closeCompetition();
+  const r = document.getElementById("cmReopen"); if (r) r.onclick = () => reopenCompetition();
+  const a = document.getElementById("cmArchive"); if (a) a.onclick = () => archiveCompetition();
+}
+function openCompetition() {
+  openModal({
+    title: "Open the competition?",
+    body: `<p>Judges will immediately be able to view approved submissions and begin finalizing evaluations. This does not affect scores you may have already imported.</p>`,
+    actions: [
+      { label: "Not yet", kind: "ghost", onClick: closeModal },
+      { label: "Open competition", kind: "primary", onClick: () => { state.competition.status = "open"; saveState(state); closeModal(); toast("Competition is now Open.", "success"); render(); } }
+    ]
+  });
+}
+function closeCompetition() {
+  openModal({
+    title: "Close the competition?",
+    body: `<p>Judges will no longer be able to submit or modify evaluations. All existing scores, rankings, and reports are preserved. You can reopen the competition later if needed.</p><p class="text-xs text-mut">Archive is a separate, permanent step that is only available after closing.</p>`,
+    actions: [
+      { label: "Cancel", kind: "ghost", onClick: closeModal },
+      { label: "Close competition", kind: "danger", onClick: () => { state.competition.status = "closed"; saveState(state); closeModal(); toast("Competition is now Closed. Judges can no longer modify evaluations.", "warn"); render(); } }
+    ]
+  });
+}
+function reopenCompetition() {
+  openModal({
+    title: "Reopen the competition?",
+    body: `<p>Judges will regain the ability to submit and modify evaluations. Existing scores and rankings remain unchanged.</p>`,
+    actions: [
+      { label: "Cancel", kind: "ghost", onClick: closeModal },
+      { label: "Reopen competition", kind: "primary", onClick: () => { state.competition.status = "open"; saveState(state); closeModal(); toast("Competition reopened. Judging is live again.", "success"); render(); } }
+    ]
+  });
+}
+function archiveCompetition() {
+  openModal({
+    title: "Archive the competition?",
+    body: `<p><strong>This is permanent.</strong> Archived competitions cannot be reopened.</p><ul style="padding-left:20px; font-size:13px; color:var(--stone-700); line-height:1.8; margin:0 0 12px;"><li>The competition becomes read-only for administrators.</li><li>Judges lose <em>portal</em> access to this competition entirely.</li><li>All results, evaluations, and exports are preserved for future reference.</li></ul><div class="alert alert-warn" style="margin:12px 0;"><strong>Google Drive access is NOT revoked automatically.</strong> Archiving removes judges' access inside the AzCEP portal only. You must manually revoke each judge's access to the Google Drive folder that holds the research PDFs, otherwise they will still be able to open those documents directly in Drive.</div><div class="field" style="margin:16px 0 0;"><label style="display:flex; gap:8px; align-items:flex-start; font-size:13px; cursor:pointer;"><input type="checkbox" id="archAck" style="margin-top:3px; width:auto;"/><span>I understand that I am responsible for manually revoking each judge's Google Drive access, and that archiving the competition does not do this for me.</span></label></div>`,
+    actions: [
+      { label: "Cancel", kind: "ghost", onClick: closeModal },
+      { label: "Archive permanently", kind: "danger", onClick: () => {
+          const ack = document.getElementById("archAck");
+          if (!ack || !ack.checked) return toast("Please acknowledge the Drive revocation responsibility to continue.", "warn");
+          state.competition.status = "archived"; saveState(state); closeModal();
+          toast("Competition archived. Remember to revoke Drive access for each judge.", "warn"); render();
+      } }
+    ]
+  });
+}
+function adminSubmissions() {
+  return `<h1 style="margin-bottom:8px;">Submissions</h1><p class="text-mut text-sm" style="margin-bottom:24px;">${state.submissions.length} registered. Click a row to see detail. Only approved submissions appear on judge dashboards.</p><div class="card"><h2>Register a new submission</h2><div class="card-sub">Project title + the Drive sharing link. Submission number is assigned automatically.</div><form id="newSubForm"><div class="field"><label class="field-label" for="newTitle">Project title</label><input type="text" id="newTitle" required placeholder="e.g. Point-of-care ultrasound in rural ED triage" /></div><div class="field"><label class="field-label" for="newDrive">Google Drive share link</label><input type="url" id="newDrive" required placeholder="https://drive.google.com/file/d/.../view" /><div class="field-help">Remember, share the folder with each judge as Restricted Viewer, not "Anyone with link".</div></div><button type="submit" class="btn btn-primary">Register submission</button></form></div><div class="card"><h2>Registered submissions</h2><table><thead><tr><th>#</th><th>Project title</th><th>Resident</th><th>Status</th><th>Reviews</th><th></th></tr></thead><tbody>${state.submissions.map(s => { const revs = state.reviews.filter(r => r.submissionId === s.id); const finals = revs.filter(r => r.status === "final").length; return `<tr class="row-hover"><td>#${pad3(s.number)}</td><td><a href="#" data-sub="${s.id}" class="row-link">${s.title}</a></td><td class="text-xs text-mut">${s.residentName}</td><td>${s.approved ? `<span class="pill pill-open">Approved</span>` : `<span class="pill pill-setup">Awaiting approval</span>`}</td><td class="num">${finals} final${finals===1?"":"s"}</td><td class="text-right"><button class="btn btn-sm btn-ghost" data-sub="${s.id}">Open</button></td></tr>`; }).join("")}</tbody></table></div>`;
+}
+function bindAdminSubmissions() {
+  document.querySelectorAll(".row-link, [data-sub]").forEach(el => { el.onclick = (e) => { e.preventDefault(); state.ui.detailSubId = el.dataset.sub; go("submission-detail"); }; });
+  document.getElementById("newSubForm").onsubmit = (e) => {
+    e.preventDefault();
+    const title = document.getElementById("newTitle").value.trim();
+    const url = document.getElementById("newDrive").value.trim();
+    if (!title || !url) return;
+    if (!/drive\.google\.com\/file\/d\//.test(url) && !/drive\.google\.com\/open\?id=/.test(url)) return toast("That doesn't look like a Drive share link.", "warn");
+    const nextNum = Math.max(0, ...state.submissions.map(s => s.number)) + 1;
+    state.submissions.push({ id: "s" + (state.submissions.length + 1), number: nextNum, title, driveUrl: url, approved: false, residentName: "(fill in resident identity record)", residentInstitution: "", version: 1 });
+    saveState(state); toast("Submission #" + pad3(nextNum) + " registered.", "success"); render();
+  };
+}
+function adminSubmissionDetail() {
+  const s = state.submissions.find(x => x.id === state.ui.detailSubId);
+  if (!s) return `<p>Submission not found. <button class="btn btn-link" data-go="submissions">Back</button></p>`;
+  const revs = state.reviews.filter(r => r.submissionId === s.id);
+  return `<p class="text-mut text-sm"><button class="btn btn-link" data-go="submissions">&larr; Back to submissions</button></p><h1 style="margin-bottom:8px;">#${pad3(s.number)} — ${s.title}</h1><p class="text-mut text-sm" style="margin-bottom:24px;">Admin-only view includes the resident identity record below.</p><div class="card"><h2>Research document</h2><div class="card-sub">Hosted in AzCEP's Google Drive. Access is managed in Drive, not in this portal.</div><div class="flex gap-3 items-center"><a href="${s.driveUrl}" target="_blank" rel="noreferrer" class="btn btn-ghost">Open PDF in Drive</a><code class="text-xs">${s.driveUrl}</code></div><div class="mt-4"><strong class="text-xs" style="color:var(--stone-700)">Approval</strong><div class="flex gap-2 mt-3 items-center">${s.approved ? `<span class="pill pill-open">Approved for judging</span> <button class="btn btn-sm btn-ghost" id="unapprove">Un-approve</button>` : `<span class="pill pill-setup">Awaiting approval</span> <button class="btn btn-sm btn-primary" id="approve">Approve for judging</button>`}<button class="btn btn-sm btn-ghost" id="replace">Replace PDF…</button></div></div></div><div class="card"><h2>Resident identity record</h2><div class="card-sub">Admin-only. Never shown to judges.</div><div class="field"><label class="field-label">Name</label><input type="text" id="residentName" value="${s.residentName}" /></div><div class="field"><label class="field-label">Institution</label><input type="text" id="residentInstitution" value="${s.residentInstitution}" /></div><button class="btn btn-ghost" id="saveIdentity">Save identity record</button></div><div class="card"><h2>Reviews on this submission</h2>${revs.length === 0 ? `<div class="text-sm text-mut">No reviews yet.</div>` : `<table><thead><tr><th>Judge</th><th>Status</th><th class="num">Total /30</th><th>Finalized</th><th></th></tr></thead><tbody>${revs.map(r => { const j = state.judges.find(x => x.id === r.judgeId); const total = totalFromScores(r); const reopenedBadge = r.reopenedAt ? ` <span class="text-xs text-mut" title="Reopened ${new Date(r.reopenedAt).toLocaleString()} by ${r.reopenedBy || "admin"}: ${r.reopenReason || ""}">(previously reopened)</span>` : ""; return `<tr><td>${j.name} <span class="text-xs text-mut">(${j.code})</span>${reopenedBadge}</td><td><span class="pill pill-status-${r.status==='final'?'complete':'progress'}">${r.status}</span></td><td class="num">${r.status==='final'? total : "—"}</td><td class="text-xs text-mut">${r.finalizedAt ? new Date(r.finalizedAt).toLocaleDateString() : "—"}</td><td class="text-right">${r.status === "final" ? `<button class="btn btn-sm btn-danger" data-reopen="${r.id}">Reopen</button>` : `<span class="text-xs text-mut">—</span>`}</td></tr>`; }).join("")}</tbody></table>`}</div>`;
+}
+function bindAdminSubmissionDetail() {
+  document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+  const s = state.submissions.find(x => x.id === state.ui.detailSubId);
+  const ap = document.getElementById("approve"); if (ap) ap.onclick = () => { s.approved = true; saveState(state); toast("Approved.", "success"); render(); };
+  const un = document.getElementById("unapprove"); if (un) un.onclick = () => { s.approved = false; saveState(state); toast("Un-approved.", "warn"); render(); };
+  document.getElementById("saveIdentity").onclick = () => { s.residentName = document.getElementById("residentName").value.trim(); s.residentInstitution = document.getElementById("residentInstitution").value.trim(); saveState(state); toast("Identity record saved.", "success"); render(); };
+  document.getElementById("replace").onclick = () => {
+    const revs = state.reviews.filter(r => r.submissionId === s.id);
+    const finals = revs.filter(r => r.status === "final").length, drafts = revs.filter(r => r.status === "draft").length;
+    openModal({ title: "Replace this PDF", body: `<p>This submission has <strong>${finals} completed evaluations</strong> and <strong>${drafts} drafts</strong>. Replacing the PDF preserves the prior version in history. Choose:</p><div class="field"><label><input type="radio" name="repl" value="minor" /> Minor correction, don't reopen existing evaluations.</label></div><div class="field"><label><input type="radio" name="repl" value="material" /> Material change, reopen all ${finals} finalized evaluations for re-review.</label></div><div class="field"><label class="field-label">Reason (required)</label><textarea id="replReason" rows="3"></textarea></div>`, actions: [{ label: "Cancel", kind: "ghost", onClick: closeModal }, { label: "Record", kind: "primary", onClick: () => { const k = document.querySelector("input[name=repl]:checked"); const rsn = document.getElementById("replReason").value.trim(); if (!k) return toast("Pick minor or material.", "warn"); if (!rsn) return toast("Reason required.", "warn"); s.version = (s.version || 1) + 1; saveState(state); closeModal(); toast("Replacement recorded (demo). v" + s.version, "success"); if (k.value === "material") toast(finals + " finalized evaluations marked for reopen.", "warn"); render(); } }] });
+  };
+  document.querySelectorAll("[data-reopen]").forEach(btn => btn.onclick = () => reopenReview(btn.dataset.reopen));
+}
+function reopenReview(reviewId) {
+  const r = state.reviews.find(x => x.id === reviewId);
+  if (!r) return;
+  const j = state.judges.find(x => x.id === r.judgeId);
+  const s = state.submissions.find(x => x.id === r.submissionId);
+  openModal({
+    title: "Reopen " + j.name + "'s evaluation of #" + pad3(s.number) + "?",
+    body: `<p>This will unlock the evaluation so <strong>${j.name}</strong> can edit scores and comments for <strong>#${pad3(s.number)} — ${s.title}</strong>, then resubmit.</p><p class="text-xs text-mut">The original finalize timestamp is preserved. A reopen entry is written to the audit log. In production, ${j.name} would receive an email notification with your reason text.</p><div class="field"><label class="field-label">Reason (required, will be shown to the judge)</label><textarea id="reopReason" rows="3" placeholder="e.g. Scoring entered in the wrong category. Please re-score and resubmit."></textarea></div>`,
+    actions: [
+      { label: "Cancel", kind: "ghost", onClick: closeModal },
+      { label: "Reopen evaluation", kind: "danger", onClick: () => {
+          const reason = document.getElementById("reopReason").value.trim();
+          if (!reason) return toast("Reason is required.", "warn");
+          r.status = "draft";
+          r.reopenedAt = new Date().toISOString();
+          r.reopenedBy = "Administrator (demo)";
+          r.reopenReason = reason;
+          saveState(state); closeModal();
+          toast("Evaluation reopened. " + j.name + " can now edit and resubmit (demo, no email actually sent).", "warn");
+          render();
+      }}
+    ]
+  });
+}
+}
+function adminJudges() {
+  const rows = state.judges.map(j => { const my = state.reviews.filter(r => r.judgeId === j.id); const f = my.filter(r => r.status === "final").length, d = my.filter(r => r.status === "draft").length, t = state.submissions.filter(s => s.approved).length; return `<tr><td><strong>${j.code}</strong></td><td>${j.name}<div class="text-xs text-mut">${j.email}</div></td><td>${j.removedAt ? `<span class="pill pill-closed">Removed ${j.removedAt}</span> ${j.includeScoresAfterRemoval ? '<span class="text-xs">(scores included)</span>' : '<span class="text-xs">(scores excluded)</span>'}` : `<span class="pill pill-open">Active</span>`}</td><td class="text-xs">Invited ${j.invitedAt}</td><td class="text-xs">${f} / ${t} final${d ? ` &middot; ${d} drafts` : ""}</td><td class="text-right">${!j.removedAt ? `<button class="btn btn-sm btn-ghost" data-invite="${j.id}">Resend invite</button> <button class="btn btn-sm btn-danger" data-remove="${j.id}">Remove</button>` : `<button class="btn btn-sm btn-ghost" data-restore="${j.id}">Restore</button>`}</td></tr>`; }).join("");
+  return `<h1 style="margin-bottom:8px;">Judges</h1><p class="text-mut text-sm" style="margin-bottom:24px;">${activeJudges().length} active, ${state.judges.length - activeJudges().length} removed. Judge codes are stable and never recycled.</p><div class="card"><h2>Assign a new judge</h2><div class="card-sub">Pick from member roster (demo) and allocate the next judge code.</div><form id="newJudgeForm"><div class="field"><label class="field-label">Full name</label><input type="text" id="newJudgeName" required placeholder="Dr. Jane Reviewer" /></div><div class="field"><label class="field-label">Email (Google account for Drive sharing)</label><input type="email" id="newJudgeEmail" required placeholder="j.reviewer@example.com" /></div><div class="flex gap-2"><button type="submit" class="btn btn-primary">Assign (no invite yet)</button><button type="button" class="btn btn-ghost" id="assignAndInvite">Assign + send invite</button></div></form></div><div class="card"><h2>Current judging panel</h2><table><thead><tr><th>Code</th><th>Judge</th><th>Status</th><th>Invited</th><th>Progress</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function bindAdminJudges() {
+  document.querySelectorAll("[data-remove]").forEach(b => b.onclick = () => removeJudge(b.dataset.remove));
+  document.querySelectorAll("[data-restore]").forEach(b => b.onclick = () => restoreJudge(b.dataset.restore));
+  document.querySelectorAll("[data-invite]").forEach(b => b.onclick = () => toast("Invite email queued (demo).", "success"));
+  const create = (invite) => { const name = document.getElementById("newJudgeName").value.trim(), em = document.getElementById("newJudgeEmail").value.trim(); if (!name || !em) return; const nc = Math.max(0, ...state.judges.map(j => parseInt(j.code.slice(1)))) + 1; state.judges.push({ id: "j" + (state.judges.length + 1), code: "J" + String(nc).padStart(2, "0"), name, email: em, invitedAt: new Date().toISOString().slice(0, 10), removedAt: null, includeScoresAfterRemoval: null }); saveState(state); toast((invite ? "Assigned + invite queued" : "Assigned") + " (demo).", "success"); render(); };
+  document.getElementById("newJudgeForm").onsubmit = (e) => { e.preventDefault(); create(false); };
+  document.getElementById("assignAndInvite").onclick = () => create(true);
+}
+function removeJudge(id) {
+  const j = state.judges.find(x => x.id === id);
+  const mf = state.reviews.filter(r => r.judgeId === id && r.status === "final").length;
+  openModal({ title: "Remove " + j.name + "?", body: `<p>This judge has <strong>${mf} finalized evaluations</strong>. They will be preserved either way. Include their scores in the official results?</p><div class="field"><label><input type="radio" name="inc" value="yes" checked /> Include their scores.</label></div><div class="field"><label><input type="radio" name="inc" value="no" /> Exclude their scores.</label></div><div class="alert alert-warn">Portal access is revoked immediately. You must also revoke Drive access manually.</div>`, actions: [{ label: "Cancel", kind: "ghost", onClick: closeModal }, { label: "Remove", kind: "danger", onClick: () => { const inc = document.querySelector("input[name=inc]:checked").value; j.removedAt = new Date().toISOString().slice(0, 10); j.includeScoresAfterRemoval = inc === "yes"; saveState(state); closeModal(); toast(j.name + " removed.", "warn"); render(); } }] });
+}
+function restoreJudge(id) { const j = state.judges.find(x => x.id === id); j.removedAt = null; j.includeScoresAfterRemoval = null; saveState(state); toast(j.name + " restored.", "success"); render(); }
+function adminScoring() {
+  const subs = state.submissions.filter(s => s.approved);
+  const ranked = rankingRows();
+  const rows = state.judges.map(j => { const cells = subs.map(s => { const r = state.reviews.find(x => x.judgeId === j.id && x.submissionId === s.id); if (!r || r.status !== "final") return `<td class="num text-mut">—</td>`; const tot = totalFromScores(r); const { excluded } = computeAverages(s.id); const ex = excluded.includes(r.id) && (!j.removedAt || j.includeScoresAfterRemoval === true); return `<td class="num ${ex ? 'excluded' : ''}">${tot}</td>`; }).join(""); return `<tr><td>${j.name} <span class="text-xs text-mut">(${j.code})${j.removedAt ? " · removed" : ""}</span></td>${cells}</tr>`; }).join("");
+  const sumsRow = subs.map(s => { const incl = includedReviews(s.id); const sum = incl.reduce((a, r) => a + totalFromScores(r), 0); return `<td class="num"><strong>${sum}</strong></td>`; }).join("");
+  const avgRow = subs.map(s => { const { avg } = computeAverages(s.id); return `<td class="num"><strong>${avg == null ? "—" : avg.toFixed(2)}</strong></td>`; }).join("");
+  const trimRow = subs.map(s => { const { trimmed } = computeAverages(s.id); return `<td class="num yellow-cell"><strong>${trimmed == null ? "— (need 3+)" : trimmed.toFixed(2)}</strong></td>`; }).join("");
+  const headCells = subs.map(s => `<th class="num">#${pad3(s.number)}</th>`).join("");
+  // Preliminary vs Final: preliminary while ANY active judge still has an outstanding
+  // evaluation on ANY approved submission. Flips to Final automatically when every
+  // (active judge × approved submission) pair has a finalized review.
+  const anyOutstanding = subs.some(s => provisionalFlag(s.id));
+  const headingLabel = anyOutstanding ? "Preliminary Rankings" : "Final Rankings";
+  const headingNote = anyOutstanding
+    ? `Results may change as additional evaluations are finalized. Current standings reflect reviews completed so far.`
+    : `All required evaluations have been finalized. Rankings are complete but may change if an administrator reopens an evaluation, modifies the judging panel, or approves additional submissions.`;
+  const headingBadge = anyOutstanding ? `<span class="pill pill-setup" style="margin-left:10px; vertical-align: middle;">Preliminary</span>` : `<span class="pill pill-open" style="margin-left:10px; vertical-align: middle;">Final</span>`;
+
+  const tipRank = `<span class="help" tabindex="0">?<span class="help-body"><strong>Rank</strong><br/>Numeric position. Rank 1 = best submission. Sorted by the <strong>Trimmed</strong> mean (highest first). Falls back to <strong>Avg</strong> when a submission has fewer than 3 included reviews.</span></span>`;
+  const tipAvg = `<span class="help" tabindex="0">?<span class="help-body"><strong>Avg</strong> (plain arithmetic mean)<br/>Sum of every included judge's total /30, divided by the number of included judges. 2 decimal places. "Included" = finalized review AND (judge is active OR removed-with-scores-kept).</span></span>`;
+  const tipTrim = `<span class="help" tabindex="0">?<span class="help-body"><strong>Trimmed</strong> (also "Ave with High / Low removed")<br/>Remove exactly ONE highest + ONE lowest included total, then average the rest. Requires 3+ included reviews. Tie-break: earliest finalized review is excluded first.</span></span>`;
+  const tipIncl = `<span class="help" tabindex="0">?<span class="help-body"><strong>Included</strong><br/>How many finalized judge reviews went into the Avg + Trimmed values for this submission. A <strong>Provisional</strong> badge means at least one active judge still owes a final evaluation on this submission.</span></span>`;
+
+  return `<h1 style="margin-bottom:8px;">Scoring dashboard</h1><p class="text-mut text-sm" style="margin-bottom:24px;">Ranked by trimmed mean (fallback to plain mean if fewer than 3 reviews).</p><div class="card"><h2>${headingLabel}${headingBadge}</h2><div class="card-sub">${headingNote}</div><table><thead><tr><th>Rank ${tipRank}</th><th>#</th><th>Project title</th><th class="num">Avg ${tipAvg}</th><th class="num">Trimmed ${tipTrim}</th><th>Included ${tipIncl}</th><th></th></tr></thead><tbody>${ranked.map((r, i) => `<tr><td><strong>${i+1}</strong></td><td>#${pad3(r.s.number)}</td><td>${r.s.title}</td><td class="num">${r.avg == null ? "—" : r.avg.toFixed(2)}</td><td class="num"><strong>${r.trimmed == null ? "—" : r.trimmed.toFixed(2)}</strong></td><td>${r.count} review${r.count === 1 ? "" : "s"}${r.provisional ? ' <span class="pill pill-setup">Provisional</span>' : ""}</td><td class="text-right"><button class="btn btn-sm btn-ghost" data-sub="${r.s.id}">Open</button></td></tr>`).join("")}</tbody></table></div><div class="card"><h2>Judge-by-submission matrix</h2><div class="card-sub">Each cell is a judge's total /30. Yellow cells = high + low excluded from the trimmed mean.</div><table class="scoring-table"><thead><tr><th>Judge</th>${headCells}</tr></thead><tbody>${rows}</tbody><tfoot><tr><td style="font-weight:600; color:var(--stone-500);">Sum</td>${sumsRow}</tr><tr><td style="font-weight:600; color:var(--stone-500);">Average</td>${avgRow}</tr><tr style="background:var(--yellow-100);"><td style="font-weight:600; color:var(--stone-700);">Ave with High / Low removed</td>${trimRow}</tr></tfoot></table></div>`;
+}
+function bindAdminScoring() { document.querySelectorAll("[data-sub]").forEach(b => b.onclick = () => { state.ui.detailSubId = b.dataset.sub; go("submission-detail"); }); }
+function adminExports() { return `<h1 style="margin-bottom:8px;">Exports</h1><p class="text-mut text-sm" style="margin-bottom:24px;">Downloadable reports. Internet needed on first load for the Excel + PDF libraries.</p><div class="card"><h2>Excel workbook (multi-sheet)</h2><div class="card-sub">Total Scores by Judge, Submission Score Breakdown (both averages, yellow excluded cells), per-submission detail sheets, admin-only identity mapping.</div><button class="btn btn-primary" id="exportExcel">Download .xlsx</button></div><div class="card"><h2>PDF grading sheets</h2><div class="card-sub">Filename convention: AzCEP_${CURRENT_YEAR}_Submission###_J##.pdf</div><div class="flex gap-2"><button class="btn btn-primary" id="exportOnePdf">Download a sample PDF</button><button class="btn btn-ghost" disabled>Bulk ZIP (production only)</button></div></div>`; }
+function bindAdminExports() { document.getElementById("exportExcel").onclick = exportExcel; document.getElementById("exportOnePdf").onclick = exportSamplePdf; }
+function adminAudit() {
+  const e = [{ t: "2027-02-10 10:14", a: "stephanie@azcep.org", act: "competition_opened", payload: "Competition 2027 moved to Open" }, { t: "2027-02-10 10:22", a: "stephanie@azcep.org", act: "submission_registered", payload: "Submission #004 (Awaiting approval)" }, { t: "2027-02-10 11:03", a: "stephanie@azcep.org", act: "judge_removed", payload: "Dr. Benjamin Ouellet (J05); scores included" }, { t: "2027-02-11 09:31", a: "dr. alison barkley", act: "evaluation_finalized", payload: "Submission #001 finalized (total 26)" }];
+  return `<h1 style="margin-bottom:8px;">Audit log</h1><p class="text-mut text-sm" style="margin-bottom:24px;">Sample entries illustrating what gets logged.</p><div class="card"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Detail</th></tr></thead><tbody>${e.map(x => `<tr><td class="text-xs text-mut">${x.t}</td><td class="text-xs">${x.a}</td><td><code>${x.act}</code></td><td class="text-xs">${x.payload}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function judgeDashboard() {
+  const j = state.judges.find(x => x.id === state.ui.currentJudgeId);
+  const st = state.competition.status;
+  // Archived: judges lose portal access entirely
+  if (st === "archived") {
+    return `<h1 style="margin-bottom:8px;">No active competitions</h1><p class="text-mut text-sm" style="margin-bottom:20px;">You do not currently have any competitions assigned to you.</p><div class="alert alert-info">The ${state.competition.name} has been archived. Please contact AzCEP if you believe this is in error.</div>`;
+  }
+  const subs = state.submissions.filter(s => s.approved);
+  const canEdit = st === "open";
+  const closedBanner = st === "closed" ? `<div class="alert alert-warn"><strong>Judging is closed.</strong> You can view your submitted evaluations but can no longer modify or submit new ones. Contact AzCEP admin if changes are needed.</div>` : "";
+  const setupBanner = st === "setup" ? `<div class="alert alert-warn"><strong>Judging has not started yet.</strong> You will be able to view and evaluate submissions once the administrator opens the competition.</div>` : "";
+  const rows = subs.map(s => { const r = state.reviews.find(x => x.judgeId === j.id && x.submissionId === s.id); let sp = `<span class="pill pill-status-not">Not started</span>`; if (r && r.status === "draft") sp = `<span class="pill pill-status-progress">In progress</span>`; if (r && r.status === "final") sp = `<span class="pill pill-status-complete">Completed</span>`; const openLabel = (!canEdit) ? "View evaluation" : (r && r.status==="final" ? "View submitted" : "Open evaluation"); return `<tr><td><strong>#${pad3(s.number)}</strong></td><td><strong>${s.title}</strong></td><td>${sp}</td><td><a href="${s.driveUrl}" target="_blank" rel="noreferrer" class="btn btn-sm btn-ghost">View research paper</a></td><td><button class="btn btn-sm btn-primary" data-sub="${s.id}">${openLabel}</button></td></tr>`; }).join("");
+  return `<h1 style="margin-bottom:8px;">Your dashboard</h1><p class="text-mut text-sm" style="margin-bottom:12px;">${state.competition.name} &middot; deadline ${state.competition.deadline} &middot; status <span class="pill pill-${st}">${st}</span></p>${setupBanner}${closedBanner}${canEdit ? `<div class="alert alert-info">Scoring scale: <strong>1 = poorly supports, 5 = strongly supports</strong>. All six categories required to finalize.</div>` : ""}<div class="card"><table><thead><tr><th>#</th><th>Project title</th><th>Status</th><th>Research paper</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function bindJudgeDashboard() { document.querySelectorAll("[data-sub]").forEach(b => b.onclick = () => { state.ui.evalSubId = b.dataset.sub; go("judge-evaluate"); }); }
+function judgeEvaluate() {
+  const j = state.judges.find(x => x.id === state.ui.currentJudgeId);
+  const s = state.submissions.find(x => x.id === state.ui.evalSubId);
+  if (!s) return `<p>Submission not found.</p>`;
+  let r = state.reviews.find(x => x.judgeId === j.id && x.submissionId === s.id);
+  if (!r) { r = { id: j.id + "_" + s.id, judgeId: j.id, submissionId: s.id, cat1:0,cat2:0,cat3:0,cat4:0,cat5:0,cat6:0, commentCat1:"",commentCat2:"",commentCat3:"",commentCat4:"",commentCat5:"",commentCat6:"", status:"draft", finalizedAt:null, editVersion:1 }; state.reviews.push(r); saveState(state); }
+  const st = state.competition.status;
+  const compReadOnly = st !== "open";
+  const locked = r.status === "final" || compReadOnly, total = totalFromScores(r);
+  const cats = RUBRIC.map((c, idx) => `<div class="rubric-block"><div class="rubric-title">Category ${idx+1}. ${c.title}</div><div class="rubric-prompt">${c.prompt}</div><div class="score-buttons" data-cat="${c.key}">${[1,2,3,4,5].map(n => `<button type="button" class="score-btn ${r[c.key]===n?'selected':''}" data-val="${n}" ${locked?'disabled':''}>${n}</button>`).join("")}</div><label class="field-label" style="margin-top:8px;">Comments</label><textarea data-comment="${c.key}" rows="2" ${locked?'disabled':''}>${r['comment'+c.key.charAt(0).toUpperCase()+c.key.slice(1)] || ""}</textarea></div>`).join("");
+  const complete = [1,2,3,4,5,6].every(n => r["cat"+n] > 0);
+  const compBanner = (compReadOnly && r.status !== "final") ? `<div class="alert alert-warn"><strong>${st === "closed" ? "Judging is closed." : st === "archived" ? "This competition is archived." : "Judging has not started."}</strong> You cannot make changes to this evaluation.</div>` : "";
+  const finalBanner = r.status === "final" ? `<div class="alert alert-info"><strong>This evaluation is finalized.</strong> Contact AzCEP admin for changes.</div>` : "";
+  return `<p class="text-mut text-sm"><button class="btn btn-link" data-go="judge-dashboard">&larr; Back to dashboard</button></p><h1 style="margin-bottom:8px;">AzCEP Resident Research Evaluation Form</h1><p class="text-sm" style="margin-bottom:4px; color:var(--stone-700);"><strong>Study Title:</strong> ${s.title}</p><p class="text-mut text-sm" style="margin-bottom:12px;">Submission #${pad3(s.number)} &middot; ${state.competition.name}</p><p class="text-sm" style="margin-bottom:20px;"><a href="${s.driveUrl}" target="_blank" rel="noreferrer" class="btn btn-sm btn-ghost">View research paper (opens Drive in new tab)</a></p>${finalBanner}${compBanner}${!locked ? `<div class="alert alert-info">Score each category from 1 to 5. <strong>1 = poorly supports; 5 = strongly supports.</strong></div>` : ""}${cats}<div class="card flex items-center justify-between" style="position:sticky; bottom:0;"><div><strong>Total:</strong> <span style="font-family: 'Fraunces', serif; font-size: 22px; color:var(--acep-deep);">${total}</span> / 30</div><div class="flex gap-2">${!locked ? `<button class="btn btn-ghost" id="saveDraft">Save draft</button>` : ""}${!locked ? `<button class="btn btn-primary" id="submitFinal" ${complete?"":"disabled"}>Submit final</button>` : ""}</div></div>`;
+}
+function bindJudgeEvaluate() {
+  document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+  const j = state.judges.find(x => x.id === state.ui.currentJudgeId), s = state.submissions.find(x => x.id === state.ui.evalSubId);
+  const r = state.reviews.find(x => x.judgeId === j.id && x.submissionId === s.id);
+  document.querySelectorAll(".score-buttons").forEach(g => { g.querySelectorAll(".score-btn").forEach(b => { b.onclick = () => { r[g.dataset.cat] = parseInt(b.dataset.val); saveState(state); render(); }; }); });
+  document.querySelectorAll("textarea[data-comment]").forEach(t => { t.oninput = () => { const c = t.dataset.comment; r["comment" + c.charAt(0).toUpperCase() + c.slice(1)] = t.value; saveState(state); }; });
+  const sd = document.getElementById("saveDraft"); if (sd) sd.onclick = () => { r.status = "draft"; saveState(state); toast("Draft saved.", "success"); };
+  const sf = document.getElementById("submitFinal"); if (sf) sf.onclick = () => openModal({ title: "Submit final evaluation?", body: `<p>Once submitted, this evaluation locks. Only an administrator can reopen it.</p><p><strong>Study Title:</strong> ${s.title}<br><strong>Your total:</strong> ${totalFromScores(r)} / 30</p>`, actions: [{ label: "Not yet", kind: "ghost", onClick: closeModal }, { label: "Submit final", kind: "primary", onClick: () => { r.status = "final"; r.finalizedAt = new Date().toISOString(); saveState(state); closeModal(); toast("Evaluation finalized. Thank you.", "success"); go("judge-dashboard"); } }] });
+}
+async function exportExcel() {
+  if (typeof ExcelJS === "undefined") return toast("ExcelJS did not load. Reconnect and reload.", "error");
+  const wb = new ExcelJS.Workbook(); wb.creator = "AzCEP Portal (prototype)"; wb.created = new Date();
+  const subs = state.submissions.filter(s => s.approved), judges = state.judges;
+  const YEL = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEF9C3" } }, YEL_L = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFDE047" } }, BOLD = { bold: true }, HDR = { font: { bold: true, color: { argb: "FFFFFFFF" } }, fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FF003E8A" } } };
+  const s1 = wb.addWorksheet("Total Scores by Judge");
+  s1.addRow(["RESIDENT RESEARCH EVALS, " + CURRENT_YEAR + " — Totals /30"]); s1.getCell("A1").font = { bold: true, size: 14, color: { argb: "FF002B63" } }; s1.mergeCells(1, 1, 1, subs.length + 1); s1.addRow([]);
+  s1.addRow(["Judge", ...subs.map(s => "#" + pad3(s.number))]).eachCell(c => Object.assign(c, HDR));
+  judges.forEach(j => { const row = [j.name + (j.removedAt ? " (removed)" : "")]; subs.forEach(s => { const r = state.reviews.find(x => x.judgeId === j.id && x.submissionId === s.id); row.push(r && r.status === "final" ? totalFromScores(r) : ""); }); s1.addRow(row); });
+  s1.getColumn(1).width = 30; for (let c = 2; c <= subs.length + 1; c++) s1.getColumn(c).width = 10; s1.views = [{ state: "frozen", xSplit: 1, ySplit: 3 }];
+  const s2 = wb.addWorksheet("Submission Score Breakdown");
+  s2.addRow(["RESIDENT RESEARCH EVALS, " + CURRENT_YEAR]); s2.getCell("A1").font = { bold: true, size: 14, color: { argb: "FF002B63" } }; s2.mergeCells(1, 1, 1, subs.length + 1); s2.addRow([]);
+  s2.addRow(["Judge", ...subs.map(s => "#" + pad3(s.number))]).eachCell(c => Object.assign(c, HDR));
+  const excl = {}; subs.forEach((s, i) => excl[i] = computeAverages(s.id).excluded);
+  judges.forEach(j => { const row = [j.name + (j.removedAt ? " (removed)" : "")]; subs.forEach(s => { const r = state.reviews.find(x => x.judgeId === j.id && x.submissionId === s.id); row.push(r && r.status === "final" ? totalFromScores(r) : ""); }); const a = s2.addRow(row); subs.forEach((s, i) => { const r = state.reviews.find(x => x.judgeId === j.id && x.submissionId === s.id); if (!r || r.status !== "final") return; if (excl[i].includes(r.id) && (!j.removedAt || j.includeScoresAfterRemoval === true)) a.getCell(i + 2).fill = YEL; }); });
+  s2.addRow([]);
+  s2.addRow(["Sum", ...subs.map(s => includedReviews(s.id).reduce((a, r) => a + totalFromScores(r), 0))]).eachCell(c => c.font = BOLD);
+  s2.addRow(["Average", ...subs.map(s => { const a = computeAverages(s.id).avg; return a == null ? "" : Number(a.toFixed(2)); })]).eachCell(c => c.font = BOLD);
+  const tr = s2.addRow(["Ave with High/Low removed", ...subs.map(s => { const a = computeAverages(s.id).trimmed; return a == null ? "" : Number(a.toFixed(2)); })]); tr.eachCell(c => c.font = BOLD); tr.getCell(1).fill = YEL_L;
+  s2.getColumn(1).width = 34; for (let c = 2; c <= subs.length + 1; c++) { s2.getColumn(c).width = 10; s2.getColumn(c).alignment = { horizontal: "right" }; } s2.views = [{ state: "frozen", xSplit: 1, ySplit: 3 }];
+  subs.forEach(s => { const sh = wb.addWorksheet("Submission #" + pad3(s.number)); sh.addRow(["Submission #" + pad3(s.number) + " — " + s.title]); sh.getCell("A1").font = { bold: true, size: 13, color: { argb: "FF002B63" } }; sh.mergeCells(1, 1, 1, 10); sh.addRow([]); sh.addRow(["Judge", "Cat 1 Methods", "Cat 2 Completion", "Cat 3 Novelty", "Cat 4 Impact", "Cat 5 Mission", "Cat 6 Outreach", "Total /30", "Status", "Finalized"]).eachCell(c => Object.assign(c, HDR)); judges.forEach(j => { const r = state.reviews.find(x => x.judgeId === j.id && x.submissionId === s.id); if (!r) sh.addRow([j.name, "", "", "", "", "", "", "", "Not started", ""]); else sh.addRow([j.name, r.cat1 || "", r.cat2 || "", r.cat3 || "", r.cat4 || "", r.cat5 || "", r.cat6 || "", r.status === "final" ? totalFromScores(r) : "", r.status, r.finalizedAt ? new Date(r.finalizedAt).toLocaleDateString() : ""]); }); sh.addRow([]); sh.addRow(["Comments"]).getCell(1).font = BOLD; judges.forEach(j => { const r = state.reviews.find(x => x.judgeId === j.id && x.submissionId === s.id); if (!r) return; const cmt = [r.commentCat1, r.commentCat2, r.commentCat3, r.commentCat4, r.commentCat5, r.commentCat6].filter(Boolean).join(" | "); if (cmt) sh.addRow([j.name, cmt]); }); sh.getColumn(1).width = 28; for (let c = 2; c <= 10; c++) sh.getColumn(c).width = 13; });
+  const sid = wb.addWorksheet("IDENTITY MAPPING — ADMIN ONLY"); sid.getCell("A1").value = "ADMIN ONLY — submission to resident identity mapping"; sid.getCell("A1").font = { bold: true, color: { argb: "FFB91C1C" } }; sid.mergeCells(1, 1, 1, 5); sid.addRow([]); sid.addRow(["Submission #", "Project title", "Resident name", "Institution", "PDF version"]).eachCell(c => Object.assign(c, HDR)); subs.forEach(s => sid.addRow(["#" + pad3(s.number), s.title, s.residentName, s.residentInstitution, "v" + (s.version || 1)])); sid.getColumn(1).width = 14; sid.getColumn(2).width = 60; sid.getColumn(3).width = 28; sid.getColumn(4).width = 30; sid.getColumn(5).width = 12;
+  const buf = await wb.xlsx.writeBuffer(); const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "AzCEP_" + CURRENT_YEAR + "_ResidentResearch_Scores.xlsx"; a.click(); URL.revokeObjectURL(url); toast("Workbook downloaded.", "success");
+}
+function exportSamplePdf() {
+  if (!window.jspdf || !window.jspdf.jsPDF) return toast("jsPDF did not load. Reconnect and reload.", "error");
+  const { jsPDF } = window.jspdf;
+  const r = state.reviews.find(x => x.status === "final");
+  if (!r) return toast("No finalized evaluations to export.", "warn");
+  const j = state.judges.find(x => x.id === r.judgeId), s = state.submissions.find(x => x.id === r.submissionId);
+  const doc = new jsPDF(); const marg = 18; let y = 20;
+  doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(0, 43, 99); doc.text("AzCEP Resident Research Evaluation", marg, y); y += 8;
+  doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(100);
+  doc.text(state.competition.name, marg, y); y += 6; doc.text("Submission #" + pad3(s.number) + " — " + s.title.slice(0, 80), marg, y); y += 6; doc.text("Judge: " + j.name + " (" + j.code + ")", marg, y); y += 6; doc.text("Finalized: " + new Date(r.finalizedAt).toLocaleString(), marg, y); y += 10;
+  RUBRIC.forEach((c, idx) => {
+    doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(0, 43, 99); doc.text("Category " + (idx + 1) + ". " + c.title + "  —  Score: " + (r[c.key] || "—") + " / 5", marg, y); y += 5;
+    doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(60); const pl = doc.splitTextToSize(c.prompt, 175); doc.text(pl, marg, y); y += pl.length * 4;
+    const field = "comment" + c.key.charAt(0).toUpperCase() + c.key.slice(1); const cmt = r[field] || "(no comment)";
+    doc.setFont("helvetica", "italic").setFontSize(9).setTextColor(90); const cl = doc.splitTextToSize("Comment: " + cmt, 175); doc.text(cl, marg, y); y += cl.length * 4 + 4;
+    if (y > 260) { doc.addPage(); y = 20; }
+  });
+  doc.setFont("helvetica", "bold").setFontSize(13).setTextColor(0, 43, 99); doc.text("Total Score: " + totalFromScores(r) + " / 30", marg, y + 6);
+  const name = "AzCEP_" + CURRENT_YEAR + "_Submission" + pad3(s.number) + "_" + j.code + ".pdf"; doc.save(name); toast("Downloaded " + name, "success");
+}
+function openModal(opts) { const m = document.getElementById("modal-mount"); m.innerHTML = `<div class="modal-backdrop"><div class="modal"><h3>${opts.title}</h3><div>${opts.body}</div><div class="modal-actions">${opts.actions.map((a, i) => `<button class="btn btn-${a.kind || 'ghost'}" data-act="${i}">${a.label}</button>`).join("")}</div></div></div>`; m.querySelectorAll("[data-act]").forEach((b, i) => b.onclick = opts.actions[i].onClick); }
+function closeModal() { document.getElementById("modal-mount").innerHTML = ""; }
+render();
+</script>
+</body>
+</html>
